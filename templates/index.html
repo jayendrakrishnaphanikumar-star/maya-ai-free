@@ -4,46 +4,27 @@
     <title>Maya AI</title>
 </head>
 <body>
-    <h1>Maya AI Assistant</h1>
+    <h1>Maya AI Chat</h1>
+    
+    <input type="text" id="msg" placeholder="Type message">
+    <button onclick="sendMsg()">Send</button>
 
-    <input type="text" id="userInput" placeholder="Talk to Maya">
-    <button onclick="sendMessage()">Send</button>
-    <button onclick="startVoice()">🎤</button>
-
-    <p id="response"></p>
+    <p id="reply"></p>
 
     <script>
-        function sendMessage() {
-            let input = document.getElementById("userInput").value;
+        async function sendMsg() {
+            let message = document.getElementById("msg").value;
 
-            fetch("/chat", {
+            let res = await fetch("/chat", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
                 },
-                body: JSON.stringify({ message: input })
-            })
-            .then(res => res.json())
-            .then(data => {
-                document.getElementById("response").innerText = data.reply;
-                speak(data.reply);
+                body: JSON.stringify({ message: message })
             });
-        }
 
-        function startVoice() {
-            let recognition = new webkitSpeechRecognition();
-            recognition.onresult = function(event) {
-                let text = event.results[0][0].transcript;
-                document.getElementById("userInput").value = text;
-                sendMessage();
-            };
-            recognition.start();
-        }
-
-        function speak(text) {
-            let speech = new SpeechSynthesisUtterance(text);
-            speech.lang = "en-US";
-            window.speechSynthesis.speak(speech);
+            let data = await res.json();
+            document.getElementById("reply").innerText = data.reply;
         }
     </script>
 </body>
