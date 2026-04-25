@@ -1,29 +1,30 @@
-from flask import Flask, render_template, request, jsonify
-import requests
+from flask import Flask, request, jsonify
+from openai import OpenAI
+import os
 
 app = Flask(__name__)
 
-API_URL = "https://api-inference.huggingface.co/models/facebook/blenderbot-400M-distill"
-headers = {"Authorization": "Bearer YOUR_HF_TOKEN"}
-
-def ask_maya(message):
-    payload = {"inputs": message}
-    response = requests.post(API_URL, headers=headers, json=payload)
-
-    try:
-        return response.json()[0]["generated_text"]
-    except:
-        return "Maya is thinking... try again"
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 @app.route("/")
 def home():
-    return render_template("index.html")
+    return "Maya AI is running!"
 
 @app.route("/chat", methods=["POST"])
 def chat():
-    user_input = request.json["message"]
-    reply = ask_maya(user_input)
-    return jsonify({"reply": reply})
+    try:
+        user_msg = request.json.get("message")
 
-if __name__ == "__main__":
-    app.run()
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are Maya, a helpful AI assistant."},
+                {"role": "user", "content": user_msg}
+            ]
+        )
+
+        reply = response.choices[0].message.content
+        return jsonify({"reply": reply})
+
+    except Exception as e:
+        return jsonify({"reply": str(e)})
