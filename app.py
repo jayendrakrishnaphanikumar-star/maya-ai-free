@@ -1,10 +1,10 @@
 from flask import Flask, request, jsonify, render_template
-from openai import OpenAI
 import os
+import requests
 
-app = Flask(__name__)   # ⚠️ FIRST THIS MUST BE HERE
+app = Flask(__name__)
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+API_KEY = os.getenv("OPENAI_API_KEY")
 
 @app.route("/")
 def home():
@@ -15,15 +15,32 @@ def chat():
     try:
         user_msg = request.json.get("message")
 
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
+        headers = {
+            "Authorization": f"Bearer {API_KEY}",
+            "Content-Type": "application/json"
+        }
+
+        data = {
+            "model": "gpt-4o-mini",
+            "messages": [
                 {"role": "system", "content": "You are Maya, a helpful AI assistant."},
                 {"role": "user", "content": user_msg}
             ]
+        }
+
+        res = requests.post(
+            "https://api.openai.com/v1/chat/completions",
+            headers=headers,
+            json=data
         )
 
-        reply = response.choices[0].message.content
+        response = res.json()
+
+        if "error" in response:
+            return jsonify({"reply": str(response)})
+
+        reply = response["choices"][0]["message"]["content"]
+
         return jsonify({"reply": reply})
 
     except Exception as e:
